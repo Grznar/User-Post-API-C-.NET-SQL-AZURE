@@ -1,43 +1,29 @@
 ﻿using System;
 using System.Data;
-using System.Data.Common;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Dapper;
 using HelloWorld.Data;
+using HelloWorld.Models;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace HelloWorld
 {
-    public class Computer
+    internal class Program
     {
-        // private string _motherboard;
-        public string Motherboard { get; set; }
-        public int CPUCores { get; set; }
-        public bool HasWifi { get; set; }
-        public bool HasLTE { get; set; }
-        public DateTime ReleaseDate { get; set; }
-        public decimal Price { get; set; }
-        public string VideoCard { get; set; }
-
-        public Computer()
+        static void Main(string[] args)
         {
-            if (VideoCard == null)
-            {
-                VideoCard = "";
-            }
-            if (Motherboard == null)
-            {
-                Motherboard = "";
-            }
-        }
-    }
+            DataContextDapper dapper = new DataContextDapper();
+            DataContextEF entityFramework = new DataContextEF();
 
-internal class Program
-{
-    static void Main(string[] args)
-    {
-        Computer myComputer = new Computer() 
+            DateTime rightNow = dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
+
+            // Console.WriteLine(rightNow.ToString());
+            
+            Computer myComputer = new Computer() 
             {
+                ComputerId = 0,
                 Motherboard = "Z690",
                 HasWifi = true,
                 HasLTE = false,
@@ -45,62 +31,84 @@ internal class Program
                 Price = 943.87m,
                 VideoCard = "RTX 2060"
             };
-            // myComputer.HasWifi = false;
-            // Console.WriteLine(myComputer.Motherboard);
-            // Console.WriteLine(myComputer.HasWifi);
-            // Console.WriteLine(myComputer.ReleaseDate);
-            // Console.WriteLine(myComputer.VideoCard);
 
-    DataContextDapper dapper = new DataContextDapper();
+            Console.WriteLine(myComputer.ComputerId);
 
+            entityFramework.Add(myComputer);
+            entityFramework.SaveChanges();
 
-DateTime rightNow = dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
-Console.WriteLine(rightNow.ToString());
-
-
-string sql=@"INSERT INTO TutorialAppSchema.Computer (
+            string sql = @"INSERT INTO TutorialAppSchema.Computer (
                 Motherboard,
                 HasWifi,
                 HasLTE,
                 ReleaseDate,
                 Price,
                 VideoCard
-) VALUES('"+myComputer.Motherboard
-    + "', '"+ myComputer.HasWifi
-    + "', '"+ myComputer.HasLTE
-    + "', '"+ myComputer.ReleaseDate
-    + "', '"+ myComputer.Price.ToString("0.00", CultureInfo.InvariantCulture)
-    + "', '"+ myComputer.VideoCard
-   + "')";
+            ) VALUES ('" + myComputer.Motherboard 
+                    + "','" + myComputer.HasWifi
+                    + "','" + myComputer.HasLTE
+                    + "','" + myComputer.ReleaseDate.ToString("yyyy-MM-dd")
+                    + "','" + myComputer.Price.ToString("0.00", CultureInfo.InvariantCulture)
+                    + "','" + myComputer.VideoCard
+            + "')";
 
-   Console.WriteLine(sql);
-     // int result =  dapper.ExecuteSqlWithRowCount(sql);
-bool result =  dapper.ExecuteSql(sql);
+            // Console.WriteLine(sql);
 
-      string sqlSelect = @"
-                SELECT 
+            // int result = dapper.ExecuteSqlWithRowCount(sql);
+            bool result = dapper.ExecuteSql(sql);
+
+            // Console.WriteLine(result);
+
+            string sqlSelect = @"
+            SELECT 
+                Computer.ComputerId,
                 Computer.Motherboard,
                 Computer.HasWifi,
                 Computer.HasLTE,
                 Computer.ReleaseDate,
                 Computer.Price,
                 Computer.VideoCard
-      FROM TutorialAppSchema.Computer";
-    Console.WriteLine(result);
+             FROM TutorialAppSchema.Computer";
 
-IEnumerable<Computer> computers= dapper.LoadData<Computer>(sqlSelect);
-Console.WriteLine("'Motherboard', 'HasWifi', 'HasLTE', 'Price,'VideoCard'");
-foreach(Computer singleComputer in computers)
-{
-    Console.WriteLine("'"+myComputer.Motherboard
-     + "', '"+ myComputer.HasWifi
-    + "', '"+ myComputer.HasLTE
-    + "', '"+ myComputer.ReleaseDate
-    + "', '"+ myComputer.Price.ToString("0.00", CultureInfo.InvariantCulture)
-    + "', '"+ myComputer.VideoCard
-   + "'");
-}
+            IEnumerable<Computer> computers = dapper.LoadData<Computer>(sqlSelect);
+
+            Console.WriteLine("'ComputerId','Motherboard','HasWifi','HasLTE','ReleaseDate'" 
+                + ",'Price','VideoCard'");
+            foreach(Computer singleComputer in computers)
+            {
+                Console.WriteLine("'" + singleComputer.ComputerId 
+                    + "','" + singleComputer.Motherboard
+                    + "','" + singleComputer.HasWifi
+                    + "','" + singleComputer.HasLTE
+                    + "','" + singleComputer.ReleaseDate.ToString("yyyy-MM-dd")
+                    + "','" + singleComputer.Price.ToString("0.00", CultureInfo.InvariantCulture)
+                    + "','" + singleComputer.VideoCard + "'");
+            }
+
+            IEnumerable<Computer>? computersEf = entityFramework.Computer?.ToList<Computer>();
+
+            if (computersEf != null)
+            {
+                Console.WriteLine("'ComputerId','Motherboard','HasWifi','HasLTE','ReleaseDate'" 
+                    + ",'Price','VideoCard'");
+                foreach(Computer singleComputer in computersEf)
+                {
+                    Console.WriteLine("'" + singleComputer.ComputerId 
+                        + "','" + singleComputer.Motherboard
+                        + "','" + singleComputer.HasWifi
+                        + "','" + singleComputer.HasLTE
+                        + "','" + singleComputer.ReleaseDate.ToString("yyyy-MM-dd")
+                        + "','" + singleComputer.Price.ToString("0.00", CultureInfo.InvariantCulture)
+                        + "','" + singleComputer.VideoCard + "'");
+                }
+            }
+
+            // myComputer.HasWifi = false;
+            // Console.WriteLine(myComputer.Motherboard);
+            // Console.WriteLine(myComputer.HasWifi);
+            // Console.WriteLine(myComputer.ReleaseDate);
+            // Console.WriteLine(myComputer.VideoCard);
+        }
 
     }
-}
 }
