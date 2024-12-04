@@ -49,6 +49,14 @@
               "target": "Package",
               "version": "[2.1.35, )"
             },
+            "Microsoft.Extensions.Configuration.Json": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            },
             "microsoft.data.sqlclient": {
               "target": "Package",
               "version": "[5.2.2, )"
@@ -58,6 +66,10 @@
               "version": "[9.0.0, )"
             },
             "microsoft.entityframeworkcore.sqlserver": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "microsoft.extensions.configuration": {
               "target": "Package",
               "version": "[9.0.0, )"
             }
