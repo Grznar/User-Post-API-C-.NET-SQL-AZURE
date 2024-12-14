@@ -1,69 +1,103 @@
 using Dotnet.API.Data;
 using Microsoft.Extensions.DependencyInjection;
-
-var builder = WebApplication.CreateBuilder(args);
-
-
-builder.Services.AddControllers();
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-
-builder.Services.AddCors((options) =>
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+internal class Program
+{
+    private static void Main(string[] args)
     {
-        options.AddPolicy("DevCors", (corsBuilder) =>
+        var builder = WebApplication.CreateBuilder(args);
+
+
+        builder.Services.AddControllers();
+        // Add services to the container.
+        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
+
+        builder.Services.AddCors((options) =>
             {
-                corsBuilder.WithOrigins("http://localhost:4200", "http://localhost:3000", "http://localhost:8000")
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();
+                options.AddPolicy("DevCors", (corsBuilder) =>
+                    {
+                        corsBuilder.WithOrigins("http://localhost:4200", "http://localhost:3000", "http://localhost:8000")
+                            .AllowAnyMethod()
+                            .AllowAnyHeader()
+                            .AllowCredentials();
+                    });
+                options.AddPolicy("ProdCors", (corsBuilder) =>
+                    {
+                        corsBuilder.WithOrigins("https://myProductionSite.com")
+                            .AllowAnyMethod()
+                            .AllowAnyHeader()
+                            .AllowCredentials();
+                    });
             });
-        options.AddPolicy("ProdCors", (corsBuilder) =>
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+        string? tokenKeyString = builder.Configuration.GetSection("AppSettings:TokenKey").Value;
+
+        SymmetricSecurityKey tokenKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(
+                    tokenKeyString != null ? tokenKeyString : ""
+                )
+            );
+
+        TokenValidationParameters tokenValidationParameters = new TokenValidationParameters()
+        {
+            IssuerSigningKey = tokenKey,
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
             {
-                corsBuilder.WithOrigins("https://myProductionSite.com")
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();
+                options.TokenValidationParameters = tokenValidationParameters;
+        
             });
-    });
- builder.Services.AddScoped<IUserRepository,UserRepository>();
- var app = builder.Build();
- 
-// // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors("DevCors");
-    app.UseSwagger();
-    app.UseSwaggerUI();
+
+
+
+        var app = builder.Build();
+        // // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseCors("DevCors");
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+        else
+        {
+            app.UseCors("ProdCors");
+            app.UseHttpsRedirection();
+        }
+
+
+        // var app = builder.Build();
+
+        // // Configure the HTTP request pipeline.
+        // if (app.Environment.IsDevelopment())
+        // {
+        //     app.UseSwagger();
+        //     app.UseSwaggerUI();
+        // }
+        // else
+        // {
+        //     app.UseHttpsRedirection();
+        // }
+        app.UseAuthentication();
+        app.UseAuthorization();
+        
+        app.MapControllers();
+        // app.MapGet("/weatherforecast", () =>
+        // {
+
+        // })
+        // .WithName("GetWeatherForecast");
+
+        app.Run();
+    }
 }
-else
-{
-    app.UseCors("ProdCors");
-    app.UseHttpsRedirection();
-}
-
-
-// var app = builder.Build();
-
-// // Configure the HTTP request pipeline.
-// if (app.Environment.IsDevelopment())
-// {
-//     app.UseSwagger();
-//     app.UseSwaggerUI();
-// }
-// else
-// {
-//     app.UseHttpsRedirection();
-// }
-// app.UseAuthorization();
-app.MapControllers();
-// app.MapGet("/weatherforecast", () =>
-// {
-    
-// })
-// .WithName("GetWeatherForecast");
-
-app.Run();
-
