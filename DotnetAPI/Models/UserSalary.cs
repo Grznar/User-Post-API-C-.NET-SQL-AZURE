@@ -8,7 +8,7 @@ namespace DotnetAPI.Models
        
         public decimal Salary { get; set; }
       
-        
+        public decimal AvgSalary{get;set;}
 
         public UserSalary()
         {
