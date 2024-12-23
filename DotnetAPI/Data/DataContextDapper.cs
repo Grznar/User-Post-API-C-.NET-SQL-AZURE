@@ -37,7 +37,7 @@ namespace DotnetAPI.Data
         }
         public bool ExecuteSqlWithParameters(string sql, DynamicParameters parameters)
         {   IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-            return dbConnection.Execute(sql) > 0;
+            return dbConnection.Execute(sql,parameters) > 0;
             // SqlCommand commandWithParams = new SqlCommand(sql);
             // foreach (SqlParameter parameter in parameters)
             // {
