@@ -1,4 +1,4 @@
-using Dotnet.API.Data;
+using DotnetAPI.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -34,7 +34,7 @@ internal class Program
                             .AllowCredentials();
                     });
             });
-        builder.Services.AddScoped<IUserRepository, UserRepository>();
+        
 
         string? tokenKeyString = builder.Configuration.GetSection("AppSettings:TokenKey").Value;
 

@@ -1,5 +1,7 @@
 
 using System.ComponentModel.DataAnnotations;
+using System.Data;
+using Dapper;
 using DotnetAPI.Data;
 using DotnetAPI.Dtos;
 using DotnetAPI.Models;
@@ -25,119 +27,70 @@ public class UserCompleteController : ControllerBase
         return _dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
     }
     [HttpGet("GetUsers/{userId}/{isActive}")]
-    // public IActionResult Test()  - API RESPONSE
     public IEnumerable<UserComplete> GetUsers(int userId, bool isActive )
     {
         
         string sql = @"
         EXEC TutorialAppSchema.spUsers_Get";
         string parametres = "";
+        DynamicParameters sqlParametres = new DynamicParameters();
+
         if(userId!=0)
         {
-        parametres+=", @UserId = "+userId.ToString();
-        }
+        parametres+=", @UserId = @UserIdParameter";
+        sqlParametres.Add("@UserIdParameter",userId,DbType.Int32);
+        } 
         if(isActive)
         {
-            
-        parametres+=", @Active = "+isActive.ToString();
+        parametres+=", @Active = @ActiveParameter";
+        sqlParametres.Add("@ActiveParameter",isActive,DbType.Boolean);
         }
-        sql += parametres.Substring(1);
+        if(parametres.Length>0)sql += parametres.Substring(1);
 
-        IEnumerable<UserComplete> users = _dapper.LoadData<UserComplete>(sql);
+        IEnumerable<UserComplete> users = _dapper.LoadDataWithParametres<UserComplete>(sql,sqlParametres);
         return users;
 
     }
-    [HttpPut("EditUSer")]
-    public IActionResult EditUser(User user)
+    [HttpPut("EditUser")]
+    public IActionResult UpsertUser(UserComplete user)
     {
-        string sql = @"
-    UPDATE TutorialAppSchema.Users
-    SET[FirstName] = '" + user.FirstName +
-        "',[LastName] = '" + user.LastName +
-        "',[Email] = '" + user.Email +
-        "',[Gender] = '" + user.Gender +
-        "',[Active]= '" + user.Active +
-        "' WHERE UserId=" + user.UserID;
+
+        string sql = @"EXEC TutorialAppSchema.spUser_Upsert
+             @FirstName = @FirstNameParam 
+            ,@LastName= @LastNameParam
+            ,@Email =   @EmailParam 
+            ,@Gender =  @GenderParam
+            ,@Active=   @ActiveParam
+            ,@JobTitle=   @ActiveParam
+            ,@Department=   @DepartmentParam
+            ,@Salary=   @SalaryParam
+             @UserId=   @UserIdParam";
+
+        DynamicParameters sqlParameters = new DynamicParameters();
+        sqlParameters.Add("@FirstNameParam",user.FirstName,DbType.String);
+        sqlParameters.Add("@LastNameParam",user.LastName,DbType.String);
+        sqlParameters.Add("@EmailParam",user.Email,DbType.String);
+        sqlParameters.Add("@GenderParam",user.Gender,DbType.String);
+        sqlParameters.Add("@ActiveParam",user.Active,DbType.Boolean);
+        sqlParameters.Add("@ActiveParam",user.JobTitle,DbType.String);
+        sqlParameters.Add("@DepartmentParam",user.Department,DbType.String);
+        sqlParameters.Add("@SalaryParam",user.Salary,DbType.Decimal);
+        sqlParameters.Add("@UserIdParam",user.UserID,DbType.Int32);
         Console.WriteLine(sql);
-        if (_dapper.ExecuteSql(sql))
+        if (_dapper.ExecuteSqlWithParameters(sql,sqlParameters))
         {
             return Ok();
         }
         throw new Exception("Failed to Update User");
 
     }
-    [HttpPut("EditUserJobInfo")]
-    public IActionResult EditUserJobInfo(UserJobInfo user)
-    {
-        string sql = @"
-    UPDATE TutorialAppSchema.UserJobInfo
-    SET  [JobTitle]= '" + user.JobTitle +
-        "',[Department]='" + user.Department +
 
-        "' WHERE UserId=" + user.UserID;
-        Console.WriteLine(sql);
-        if (_dapper.ExecuteSql(sql))
-        {
-            return Ok();
-        }
-        throw new Exception("Failed to edit User");
-    }
-
-    [HttpPost("AddUser")]
-    public IActionResult AddUser(UserToAddDTO user)
-    {
-        string sql = @"
-         INSERT INTO TutorialAppSchema.Users(
-    [FirstName]
-    ,[LastName]
-    ,[Email]
-    ,[Gender]
-    ,[Active]
-)
-VALUES(" +
-   "'" + user.FirstName +
-   "','" + user.LastName +
-   "','" + user.Email +
-   "','" + user.Gender +
-   "','" + user.Active +
-   "')";
-
-
-        Console.WriteLine(sql);
-        if (_dapper.ExecuteSql(sql))
-        {
-            return Ok();
-        }
-        throw new Exception("Failed to Update User");
-
-    }
-    [HttpPost("AddUserJobInfo")]
-    public IActionResult AddUserJobInfo(UserJobInfoDTO user)
-    {
-
-        string sql = @"
-        INSERT INTO TutorialAppSchema.UserJobInfo
-        (
-        [JobTitle],
-        [Department]
-        )
-        VALUES(" +
-    "'" + user.JobTitle +
-    "','" + user.Department +
-    "')";
-        Console.WriteLine(sql);
-        if (_dapper.ExecuteSql(sql))
-        {
-            return Ok();
-        }
-        throw new Exception("Failed to Add User Job Info");
-    }
     [HttpDelete("DeleteUser/{userId}")]
     public IActionResult DeleteUser(int userId)
-    {
-        string sql = @"DELETE FROM TutorialAppSchema.Users
-     WHERE UserId = " + userId.ToString();
-        Console.WriteLine(sql);
+    {DynamicParameters sqlParameters = new DynamicParameters();
+        string sql = @"EXEC TutorialAppSchema.spUser_Delete
+        @UserId = @UserIdParam";
+         sqlParameters.Add("@UserIdParam",userId,DbType.Int32);
         if (_dapper.ExecuteSql(sql))
         {
             return Ok();
@@ -145,21 +98,6 @@ VALUES(" +
         throw new Exception("Failed to delete User");
 
     }
-    [HttpDelete("DeleteJobInfo/{userId}")]
-    public IActionResult DeleteJobInfo(int userId)
-    {
-        string sql = @"
-    DELETE FROM TutorialAppSchema.UserJobInfo
-    WHERE UserId = "+userId.ToString();
-    Console.WriteLine(sql);
-    if(_dapper.ExecuteSql(sql))
-    {
-    return Ok();
-    }
-    throw new Exception("Failed to delete User Job Info ");
-    }
-
-
 }
 
 
